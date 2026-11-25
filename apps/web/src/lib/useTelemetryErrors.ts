@@ -1,7 +1,17 @@
+/**
+ * 全局错误上报 hook：把未捕获的运行时错误与 Promise 拒绝转成埋点事件。
+ *
+ * 架构位置：在 main.tsx 的 Root 组件中调用，监听 window 级 'error' 与 'unhandledrejection'，
+ * 与 ErrorBoundary（渲染期错误 UI）互补：这里负责采集，ErrorBoundary 负责展示与恢复。
+ * 返回时清理监听器，避免 StrictMode 双挂载造成重复上报。
+ */
 import { useEffect } from 'react';
 import { telemetry } from './telemetry';
 
-/** 全局错误上报：把未捕获的渲染/运行时错误转成埋点事件 */
+/**
+ * 注册全局错误监听并在组件卸载时清理。
+ * @returns 无返回值（副作用型 hook）
+ */
 export function useTelemetryErrors() {
   useEffect(() => {
     const onError = (e: ErrorEvent) => {

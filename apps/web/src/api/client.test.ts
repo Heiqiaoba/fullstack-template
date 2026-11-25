@@ -1,8 +1,15 @@
+/**
+ * api/client 单元测试：验证错误归一化、拦截器注入与 ApiError 字段契约。
+ * 测试直接从真实 axios 实例取出拦截器回调执行，确保测的是实际注册的行为而非复制的逻辑。
+ */
 import { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 import { ApiError, apiClient, setTokenProvider } from './client';
 
-/** 直接从真实 axios 实例中取出已注册的拦截器处理函数 */
+/**
+ * 从真实 axios 实例中取出已注册的响应拒绝（rejected）处理函数。
+ * 这样测试覆盖的是生产代码里真正注册的拦截器，避免通过 mock 绕过实现。
+ */
 function getResponseRejectHandler() {
   const handlers = (
     apiClient.interceptors.response as unknown as {
@@ -14,6 +21,7 @@ function getResponseRejectHandler() {
   return handler;
 }
 
+/** 从真实 axios 实例中取出已注册的请求成功（fulfilled）处理函数。 */
 function getRequestFulfilledHandler() {
   const handlers = (
     apiClient.interceptors.request as unknown as {
@@ -26,6 +34,8 @@ function getRequestFulfilledHandler() {
 }
 
 describe('api client', () => {
+  // 服务端错误体应被完整保留：code/message/status/requestId 都能从 ApiError 上读到，
+  // 保证业务层可用统一字段做分支与问题追踪。
   it('normalizes a server error response into ApiError with code and requestId', async () => {
     const axiosError = new AxiosError(
       'Request failed',
@@ -50,6 +60,7 @@ describe('api client', () => {
     });
   });
 
+  // 超时与断网属于无 HTTP 响应的分支，必须分别落入 TIMEOUT / NETWORK 而非笼统 UNKNOWN。
   it('normalizes a timeout into ApiError with TIMEOUT code', async () => {
     await expect(
       getResponseRejectHandler()(new AxiosError('timeout', 'ECONNABORTED')),

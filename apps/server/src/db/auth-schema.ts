@@ -1,9 +1,17 @@
 /**
  * Better Auth 官方生成的 Drizzle schema（provider: pg, 字段 snake_case）。
+ *
  * 表名保持单数：user / session / account / verification，与 drizzleAdapter 默认映射一致。
+ * 本模块被 db/schema.ts 聚合导出，再经 db/index 注册到 Drizzle，最终供
+ * lib/auth 的 drizzleAdapter 与各类 service 查询使用；不依赖业务模块。
+ * role/banned 等列是为 Better Auth admin 插件预留的 RBAC 字段。
  */
 import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
 
+/**
+ * 用户表：认证主体，兼任 RBAC 载体。
+ * role 默认 user，adminRoles 由 lib/auth 的 admin 插件配置；banned 用于封禁判定。
+ */
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
@@ -22,6 +30,7 @@ export const user = pgTable('user', {
     .notNull(),
 });
 
+/** 会话表：token 唯一且按 userId 建索引，支持按用户快速查询/吊销会话 */
 export const session = pgTable(
   'session',
   {
@@ -42,6 +51,7 @@ export const session = pgTable(
   (table) => [index('session_userId_idx').on(table.userId)],
 );
 
+/** 第三方账号/凭证表：保存 provider 与 OAuth token、密码哈希，按 userId 建索引 */
 export const account = pgTable(
   'account',
   {
@@ -66,6 +76,7 @@ export const account = pgTable(
   (table) => [index('account_userId_idx').on(table.userId)],
 );
 
+/** 验证表：存放邮箱验证/密码重置等一次性令牌，按 identifier 建索引 */
 export const verification = pgTable(
   'verification',
   {

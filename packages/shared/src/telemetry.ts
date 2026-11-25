@@ -1,3 +1,10 @@
+/**
+ * 埋点事件契约：前后端共用的 Zod schema。
+ *
+ * 前端按此形状构造事件并批量上报，后端接收端用同一份 schema 校验。
+ * 隐私约定：只采集页面路径（不含 query）、匿名 sessionId 与标量属性；
+ * userId 由后端在已登录时从会话补全，前端不得伪造。
+ */
 import { z } from 'zod';
 
 /** 埋点事件的基础类型：所有事件都带会话/页面上下文，由前端自动补齐 */
@@ -18,7 +25,7 @@ export const telemetryEventSchema = z.object({
 
 export type TelemetryEvent = z.infer<typeof telemetryEventSchema>;
 
-/** 批量上报请求体 */
+/** 批量上报请求体：一次最多 100 条，与前端 MAX_BATCH 保持一致 */
 export const telemetryBatchSchema = z.object({
   events: z.array(telemetryEventSchema).min(1).max(100),
 });

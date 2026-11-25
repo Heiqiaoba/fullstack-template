@@ -1,3 +1,10 @@
+/**
+ * 登录/注册页（公开路由，无需守卫）。
+ *
+ * 架构位置：App.tsx 中 `/login` 路由对应的页面，使用 lib/auth-client 的 signIn/signUp
+ * 完成邮件密码认证；登录成功后跳转到 location.state.from（由 AuthGuard 或 ApiAuthSync 写入），
+ * 没有来源时回首页，形成「被守卫拦截 → 登录 → 回到原页」的完整体验闭环。
+ */
 import { signIn, signUp } from '@/lib/auth-client';
 import { Alert, Button, Card, Form, Input, Typography } from 'antd';
 import { useState } from 'react';
@@ -5,6 +12,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const { Title, Paragraph } = Typography;
 
+/**
+ * 登录/注册组件：两种模式共用一张表单，注册模式额外要求昵称字段。
+ * @returns 登录页 JSX
+ */
 export function Login() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [error, setError] = useState<string>('');
@@ -13,6 +24,11 @@ export function Login() {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? '/';
 
+  /**
+   * 表单提交：按当前模式调用 signIn.email 或 signUp.email；
+   * 认证成功后 navigate(from, { replace: true }) 回到来源页，失败则展示错误信息。
+   * @param values 表单值（邮箱、密码、注册时的昵称）
+   */
   const onFinish = async (values: { email: string; password: string; name?: string }) => {
     setError('');
     setLoading(true);

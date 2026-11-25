@@ -1,4 +1,10 @@
-# ---- deps & build ----
+# ============================================================
+# 多阶段构建：builder 负责安装依赖 + 编译产物；runtime 只保留运行所需内容
+# 镜像更小、攻击面更小；构建上下文为仓库根目录（见 docker-compose.yml）
+# ============================================================
+
+# ---- 阶段 1：deps & build ----
+# 基于 Node 22，启用 corepack/pnpm，按 lockfile 安装后构建 shared 与 server
 FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 WORKDIR /app
@@ -8,7 +14,9 @@ COPY apps/server/ apps/server/
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @template/shared build && pnpm --filter @template/server build
 
-# ---- runtime ----
+# ---- 阶段 2：runtime ----
+# 全新的精简 Node 镜像：不携带 builder 的源码/编译器，只复制 dist 与生产依赖
+# 创建非 root 用户 app 运行服务，降低容器逃逸风险
 FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
@@ -24,6 +32,7 @@ COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.ya
 COPY --from=builder /app/node_modules/.pnpm ./node_modules/.pnpm
 COPY --from=builder /app/apps/server/node_modules ./apps/server/node_modules
 COPY --from=builder /app/packages/shared/node_modules ./packages/shared/node_modules
+# 切换到非 root 用户；暴露 3000 并配置健康检查（探活端点由 Fastify 提供）
 USER app
 EXPOSE 3000
 WORKDIR /app/apps/server

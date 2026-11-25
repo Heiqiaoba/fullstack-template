@@ -1,3 +1,14 @@
+/**
+ * Fastify 应用装配模块：唯一的 buildApp 工厂，组装插件、钩子、错误处理与业务路由。
+ *
+ * 依赖 config（env/logger）、lib/auth、middleware 与各 routes 模块；被 index.ts
+ * 用于启动服务，也被所有测试通过 buildApp() + inject 注入请求，因此不在此处监听端口。
+ *
+ * 关键设计决策：Better Auth 的 Node handler 必须在 onRequest 钩子里 hijack
+ * /api/auth/*，早于 Fastify 的 JSON body parser 接管原始请求——否则 body 流会被
+ * parser 消费，Better Auth 读到 undefined。hijack 会绕过 onSend 链，故手动补 CORS
+ * 与 x-request-id 响应头。全局限流与认证端点自身限流叠加，健康探针显式豁免。
+ */
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
@@ -14,7 +25,15 @@ import { telemetryRoutes } from './routes/telemetry';
 import { todoRoutes } from './routes/todos';
 import { userRoutes } from './routes/users';
 
-/** 构建 Fastify 实例（导出以便测试用 supertest / inject 注入） */
+/**
+ * 构建并装配完整的 Fastify 实例（不监听端口）。
+ *
+ * 导出为工厂而非单例：测试可对每个用例创建隔离实例并用 inject 发请求，
+ * 避免端口占用与全局状态串扰。装配顺序有意为之：安全/跨域/限流插件 →
+ * Better Auth hijack → 文档 → 统一错误处理 → /api/v1 业务路由。
+ *
+ * @returns 已注册全部插件与路由、可直接 listen 或 inject 的 Fastify 实例
+ */
 export async function buildApp() {
   const app = Fastify({
     logger: isProd ? logger : false,
@@ -69,10 +88,12 @@ export async function buildApp() {
   });
 
   // Better Auth：挂载到 /api/auth/*（必须在 JSON body parser 之前接管原始请求）
+  // 原因：Fastify 默认 parser 会提前消费 body 流，Better Auth 将读到 undefined；
+  // 用 onRequest + hijack 直接把 req.raw/res.raw 交给 Node handler 可保住原始 body。
   const authHandler = toNodeHandler(auth);
   app.addHook('onRequest', async (req, reply) => {
     if (req.url.startsWith('/api/auth/')) {
-      // hijack 会绕过 Fastify 的 onSend 链，手动补上 CORS 与安全响应头
+      // hijack 会绕过 Fastify 的 onSend 链，手动补上 CORS 与 x-request-id 响应头
       const origin = req.headers.origin;
       if (
         origin &&

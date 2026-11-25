@@ -1,3 +1,10 @@
+/**
+ * 管理端示例页：演示「前端守卫 → adminClient API → 后端 admin 插件」完整链路。
+ * 这是脚手架的参考实现，业务开发时可直接替换或复制到自己的管理模块。
+ *
+ * 架构位置：App.tsx 中 `/admin` 路由对应的页面，外层由 AdminGuard 保护；
+ * 用户列表来自受保护的 /api/v1/users，角色管理直接调 authClient.admin.setRole。
+ */
 import { useUsers } from '@/api/users';
 import { QueryState } from '@/components/QueryState';
 import { authClient } from '@/lib/auth-client';
@@ -17,12 +24,17 @@ import {
 const { Title, Paragraph } = Typography;
 
 /**
- * 管理端示例页：演示「前端守卫 → adminClient API → 后端 admin 插件」完整链路。
- * 这是脚手架的参考实现，业务开发时可直接替换或复制到自己的管理模块。
+ * 管理端页面组件：展示管理员用户列表，并提供角色升降级操作（含二次确认）。
+ * @returns 管理端页面 JSX
  */
 export function Admin() {
   const usersQuery = useUsers(1, 20);
 
+  /**
+   * 通过 Better Auth admin 插件设置用户角色，并根据结果给出成功/失败提示。
+   * @param userId 目标用户 id
+   * @param role 目标角色（'user' 或 'admin'）
+   */
   const setRole = async (userId: string, role: 'user' | 'admin') => {
     try {
       const result = await authClient.admin.setRole({ userId, role });

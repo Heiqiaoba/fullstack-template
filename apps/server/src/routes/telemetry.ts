@@ -1,15 +1,22 @@
+/**
+ * 埋点接收路由模块：单条 POST /telemetry，批量接收前端事件。
+ *
+ * 依赖 lib/context 的 resolveSession 静默补全用户身份、lib/telemetry-sink 落地事件、
+ * middleware/validation 校验批次格式；由 app.ts 挂到 /api/v1 前缀。
+ *
+ * 关键设计决策：
+ * - 无认证要求（未登录用户的 page_view 也要采集），用户无感；
+ * - 从 cookie 静默解析 userId（有则带上，无则匿名），解析异常一律吞掉，不因埋点影响业务；
+ * - 路由配置 200/min 的独立限流（高于全局 100/min），既防刷又不误伤正常上报；
+ * - 立即返回 202 Accepted，落地耗时不阻塞客户端。
+ */
 import { telemetryBatchSchema } from '@template/shared';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { resolveSession } from '../lib/context';
 import { writeTelemetry } from '../lib/telemetry-sink';
 import { parseBody } from '../middleware/validation';
 
-/**
- * 埋点接收端点：
- * - 无认证要求（未登录用户的 page_view 也要采集），用户无感
- * - 从 cookie 静默解析 userId（有则带上，无则匿名），不额外要求鉴权
- * - 限流豁免由全局 rate-limit 的 allowList / 路由配置控制（见 app.ts）
- */
+/** 注册埋点接收端点 */
 export async function telemetryRoutes(app: FastifyInstance) {
   app.post(
     '/telemetry',

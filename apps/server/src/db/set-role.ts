@@ -1,12 +1,19 @@
+/**
+ * 角色管理命令行脚本：按邮箱把用户提升为管理员或降级为普通用户。
+ *
+ * 复用 db/index 的连接池直接更新 user.role，便于本地快速验证 admin 插件权限。
+ * 运行方式：pnpm --filter @template/server exec tsx src/db/set-role.ts <email> [admin|user]
+ * 生产环境也可通过 ADMIN_USER_IDS 环境变量授予管理员权限（无需改数据库），
+ * 两种方式择一：env 方式在 lib/auth 的 admin 插件中生效。
+ */
 import 'dotenv/config';
 import { eq } from 'drizzle-orm';
 import { db } from './index';
 import { users } from './schema';
 
 /**
- * 提权脚本：把指定邮箱的用户设为管理员。
- *   pnpm --filter @template/server exec tsx src/db/set-role.ts you@example.com admin
- * 生产也可用 ADMIN_USER_IDS 环境变量（无需改数据库）。
+ * 提权/降级入口：解析命令行参数，校验角色取值，按邮箱更新并返回变更结果。
+ * 参数不合法或邮箱不存在时打印错误并以非零码退出，避免静默失败。
  */
 async function main() {
   const [email, role = 'admin'] = process.argv.slice(2);

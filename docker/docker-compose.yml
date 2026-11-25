@@ -1,9 +1,15 @@
+# 全栈本地/生产编排：PostgreSQL + Server + Web(Nginx)
+# 用法：docker compose -f docker/docker-compose.yml up -d --build
+# 注意：BETTER_AUTH_SECRET 必须由环境变量提供（生产用 openssl rand -base64 32 生成）
+
 services:
+  # 数据库：PostgreSQL 16，数据落名为 postgres_data 的卷，避免容器重建丢数据
   postgres:
     image: postgres:16-alpine
     container_name: template-postgres
     restart: unless-stopped
     environment:
+      # 凭据均可通过 .env 覆盖，生产务必修改默认密码
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-app}
@@ -11,12 +17,14 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # 健康检查：待数据库真正可用后才让 server 启动（下方 depends_on 条件）
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-app}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  # 后端：由 apps/server/Dockerfile 多阶段构建；迁移需在容器内手动执行
   server:
     build:
       context: ..
@@ -26,18 +34,22 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
+      # 服务名 postgres 作为主机名，走 compose 内部网络
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-app}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?请设置 BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
       DB_POOL_MAX: 20
+      # 生产默认关闭 API 文档；开启时建议设置 DOCS_TOKEN
       ENABLE_DOCS: ${ENABLE_DOCS:-false}
       DOCS_TOKEN: ${DOCS_TOKEN:-}
+      # 管理员用户 ID 列表（逗号分隔），决定 RBAC 中的 admin 角色
       ADMIN_USER_IDS: ${ADMIN_USER_IDS:-}
     depends_on:
       postgres:
         condition: service_healthy
 
+  # 前端：Nginx 托管静态资源并反代 /api 到 server，对外暴露 80 端口
   web:
     build:
       context: ..
@@ -48,5 +60,6 @@ services:
     depends_on:
       - server
 
+# 持久化卷：数据库文件独立保存，容器重启/重建不丢数据
 volumes:
   postgres_data:

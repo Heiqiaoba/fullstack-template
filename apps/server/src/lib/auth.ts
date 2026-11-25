@@ -1,3 +1,11 @@
+/**
+ * 认证核心模块：创建并导出 Better Auth 单例。
+ *
+ * 依赖 config/env（URL、签名密钥、管理员 ID、环境标记）与 db/index（连接池 +
+ * schema 注册），通过 drizzleAdapter 直接复用项目数据库连接。app.ts 把该实例的
+ * Node handler 挂到 /api/auth/*；lib/context 则调用 auth.api.getSession 解析会话。
+ * 启用 admin 插件实现 RBAC，邮箱密码认证与数据库会话是默认策略。
+ */
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { admin } from 'better-auth/plugins';
@@ -6,7 +14,11 @@ import { db, schema } from '../db';
 
 /**
  * Better Auth 实例：邮箱密码 + 数据库会话，Drizzle adapter 直连本项目连接池。
- * HTTP handler 在 app.ts 挂载到 /api/auth/*，前端用 better-auth/react 客户端调用。
+ *
+ * 关键设计决策：
+ * - 会话 cookie 在开发/生产使用不同前缀与安全属性，避免本地 cookie 覆盖线上会话；
+ * - adminUserIds 来自环境变量且为空时无人是管理员，防止默认提权；
+ * - 认证端点自带 20/min 限流，比 app.ts 的全局 100/min 更严，抵御暴力破解。
  */
 export const auth = betterAuth({
   appName: 'Fullstack Template',

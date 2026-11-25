@@ -1,3 +1,9 @@
+/**
+ * 待办页面（受 AuthGuard 保护）：演示 TanStack Query 的完整 CRUD 交互。
+ *
+ * 架构位置：App.tsx 中 `/todos` 路由对应的页面，所有数据操作都通过 api/todos 的 hooks 完成：
+ * 查询列表、新建、勾选完成（乐观更新）、删除，并用 QueryState 统一渲染四态。
+ */
 import { useCreateTodo, useDeleteTodo, useTodos, useUpdateTodo } from '@/api/todos';
 import { QueryState } from '@/components/QueryState';
 import { Button, Card, Checkbox, Form, Input, List, Pagination, Typography, message } from 'antd';
@@ -5,6 +11,10 @@ import { useState } from 'react';
 
 const { Title } = Typography;
 
+/**
+ * 待办页组件：表单新建 + 列表勾选/删除 + 分页。
+ * @returns 待办页 JSX
+ */
 export function Todos() {
   const [page, setPage] = useState(1);
   const [form] = Form.useForm<{ title: string }>();
@@ -13,6 +23,10 @@ export function Todos() {
   const update = useUpdateTodo();
   const remove = useDeleteTodo();
 
+  /**
+   * 提交新建待办：成功后重置表单并提示，失败时展示 ApiError 的消息。
+   * @param values 表单值（title）
+   */
   const onAdd = async (values: { title: string }) => {
     try {
       await create.mutateAsync(values);

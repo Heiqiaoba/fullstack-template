@@ -1,3 +1,14 @@
+/**
+ * 认证与鉴权集成测试：通过 buildApp + inject 验证 Better Auth hijack、守卫与限流配置。
+ *
+ * 重点断言的意义：
+ * - 未登录会话响应允许 200(null session) 或 401，兼容 better-auth 版本差异；
+ * - POST body 必须被 better-auth 正确读取（字段级 password 校验错误），
+ *   以证明 onRequest hijack 早于 Fastify JSON parser 消费 body 流；
+ * - hijack 绕过 onSend 链，需断言手动补齐的 CORS 与 x-request-id 响应头；
+ * - protected 路由 401 与管理员列表 401 验证守卫生效，健康探针多次调用无 429
+ *   验证限流豁免配置。
+ */
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../app';
 

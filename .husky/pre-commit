@@ -1,1 +1,6 @@
+# Git pre-commit 钩子：提交前按顺序执行三道检查
+# 1) lint-staged：仅对暂存文件做 Biome 格式化（配置见根目录 package.json）
+# 2) 构建 shared：确保共享契约的 dist 与 src 同步
+# 3) 全量类型检查：尽早发现前后端契约漂移
+# 任一步失败即阻止本次提交
 pnpm lint-staged && pnpm --filter @template/shared build && pnpm typecheck

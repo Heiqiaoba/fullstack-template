@@ -1,3 +1,9 @@
+/**
+ * 应用首页（受 AuthGuard 保护）：展示前后端连通示例。
+ *
+ * 架构位置：App.tsx 中 `/` 路由对应的页面，通过 api/users 的 useUsers 拉取受保护的用户列表，
+ * 并用 QueryState 统一处理四态；分页状态由本地 useState 维护。
+ */
 import { useUsers } from '@/api/users';
 import { QueryState } from '@/components/QueryState';
 import { signOut } from '@/lib/auth-client';
@@ -7,6 +13,10 @@ import { Link } from 'react-router-dom';
 
 const { Title, Paragraph } = Typography;
 
+/**
+ * 首页组件：分页展示用户列表，并提供进入待办页与退出登录入口。
+ * @returns 首页 JSX
+ */
 export function Home() {
   const [page, setPage] = useState(1);
   const query = useUsers(page, 10);

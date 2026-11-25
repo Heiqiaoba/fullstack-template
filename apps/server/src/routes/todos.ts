@@ -1,3 +1,10 @@
+/**
+ * 待办事项路由模块：待办的增删改查（CRUD）与分页列表示例。
+ *
+ * 依赖 lib/context 的 requireAuth/getAuth（所有端点都要求登录并以 userId 隔离数据）、
+ * middleware/validation 校验请求、services/todo.service 执行业务逻辑；
+ * 由 app.ts 挂到 /api/v1 前缀。创建操作通过 service 的事务封装同时初始化用户档案。
+ */
 import {
   createTodoSchema,
   idParamSchema,
@@ -13,7 +20,9 @@ import { toJsonSchema } from '../lib/json-schema';
 import { parseBody, parseParams, parseQuery } from '../middleware/validation';
 import * as todoService from '../services/todo.service';
 
+/** 注册全部待办路由；所有端点统一使用 requireAuth 守卫 */
 export async function todoRoutes(app: FastifyInstance) {
+  // 所有端点共用同一鉴权钩子；提取为常量避免每处重复引用
   const guard = requireAuth;
 
   app.get(

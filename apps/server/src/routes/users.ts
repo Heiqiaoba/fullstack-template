@@ -1,3 +1,13 @@
+/**
+ * 用户路由模块：用户列表（管理员）、当前用户、按 ID 查询、更新与删除。
+ *
+ * 依赖 lib/context 的鉴权钩子与 getAuth、middleware/validation 的参数校验、
+ * services/user.service 的数据访问，以及 lib/json-schema 把共享 Zod 契约转成
+ * OpenAPI schema（文档与运行时校验同源）。由 app.ts 挂到 /api/v1 前缀。
+ *
+ * 安全约定：列表仅管理员可见；写操作校验 req.auth.userId 与目标 id 一致，
+ * 防止用户通过替换路径参数越权修改/删除他人资料。
+ */
 import {
   errorResponseSchema,
   idParamSchema,
@@ -12,6 +22,7 @@ import { toJsonSchema } from '../lib/json-schema';
 import { parseParams, parseQuery } from '../middleware/validation';
 import * as userService from '../services/user.service';
 
+/** 注册全部用户相关路由，包括权限守卫与 OpenAPI 元数据 */
 export async function userRoutes(app: FastifyInstance) {
   app.get(
     '/users',
