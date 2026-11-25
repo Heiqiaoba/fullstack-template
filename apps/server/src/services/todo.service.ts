@@ -1,5 +1,7 @@
+import type { Todo } from '@template/shared';
 import { and, count, desc, eq } from 'drizzle-orm';
 import { db, schema } from '../db';
+import { toTodoDTO } from '../lib/dto';
 import { withTransaction } from '../lib/transaction';
 
 export async function listTodos(userId: string, page: number, pageSize: number) {
@@ -15,13 +17,7 @@ export async function listTodos(userId: string, page: number, pageSize: number) 
   ]);
 
   return {
-    items: rows.map((r) => ({
-      id: r.id,
-      title: r.title,
-      completed: Boolean(r.completed),
-      createdAt: r.createdAt.toISOString(),
-      updatedAt: r.updatedAt.toISOString(),
-    })),
+    items: rows.map(toTodoDTO),
     total: countRows[0]?.value ?? 0,
     page,
     pageSize,
@@ -29,20 +25,13 @@ export async function listTodos(userId: string, page: number, pageSize: number) 
 }
 
 /** 创建待办并同时初始化用户档案（演示事务：两步写入原子化） */
-export async function createTodoWithProfile(userId: string, title: string) {
+export async function createTodoWithProfile(userId: string, title: string): Promise<Todo> {
   return withTransaction(async (tx) => {
     await tx.insert(schema.profiles).values({ userId }).onConflictDoNothing();
 
     const [row] = await tx.insert(schema.todos).values({ userId, title }).returning();
     if (!row) throw new Error('Failed to create todo');
-
-    return {
-      id: row.id,
-      title: row.title,
-      completed: Boolean(row.completed),
-      createdAt: row.createdAt.toISOString(),
-      updatedAt: row.updatedAt.toISOString(),
-    };
+    return toTodoDTO(row);
   });
 }
 
@@ -50,7 +39,7 @@ export async function updateTodo(
   userId: string,
   id: string,
   data: { title?: string; completed?: boolean },
-) {
+): Promise<Todo | null> {
   const [row] = await db
     .update(schema.todos)
     .set({
@@ -60,15 +49,7 @@ export async function updateTodo(
     .where(and(eq(schema.todos.id, id), eq(schema.todos.userId, userId)))
     .returning();
 
-  return row
-    ? {
-        id: row.id,
-        title: row.title,
-        completed: Boolean(row.completed),
-        createdAt: row.createdAt.toISOString(),
-        updatedAt: row.updatedAt.toISOString(),
-      }
-    : null;
+  return row ? toTodoDTO(row) : null;
 }
 
 export async function deleteTodo(userId: string, id: string) {

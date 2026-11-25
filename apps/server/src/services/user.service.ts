@@ -1,17 +1,21 @@
+import type { User } from '@template/shared';
 import { count, desc, eq } from 'drizzle-orm';
 import { db, schema } from '../db';
+import { toUserDTO } from '../lib/dto';
 
 /** 用户服务层：隔离路由与数据访问，业务逻辑集中在此 */
+
+const publicFields = {
+  id: schema.users.id,
+  name: schema.users.name,
+  email: schema.users.email,
+  createdAt: schema.users.createdAt,
+};
 
 export async function listUsers(page: number, pageSize: number) {
   const [rows, countRows] = await Promise.all([
     db
-      .select({
-        id: schema.users.id,
-        name: schema.users.name,
-        email: schema.users.email,
-        createdAt: schema.users.createdAt,
-      })
+      .select(publicFields)
       .from(schema.users)
       .orderBy(desc(schema.users.createdAt))
       .limit(pageSize)
@@ -20,35 +24,29 @@ export async function listUsers(page: number, pageSize: number) {
   ]);
 
   return {
-    items: rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+    items: rows.map(toUserDTO),
     total: countRows[0]?.value ?? 0,
     page,
     pageSize,
   };
 }
 
-export async function getUserById(id: string) {
+export async function getUserById(id: string): Promise<User | null> {
   const [row] = await db
-    .select({
-      id: schema.users.id,
-      name: schema.users.name,
-      email: schema.users.email,
-      createdAt: schema.users.createdAt,
-    })
+    .select(publicFields)
     .from(schema.users)
     .where(eq(schema.users.id, id))
     .limit(1);
-  return row ? { ...row, createdAt: row.createdAt.toISOString() } : null;
+  return row ? toUserDTO(row) : null;
 }
 
-export async function updateUser(id: string, data: { name?: string }) {
-  const [row] = await db.update(schema.users).set(data).where(eq(schema.users.id, id)).returning({
-    id: schema.users.id,
-    name: schema.users.name,
-    email: schema.users.email,
-    createdAt: schema.users.createdAt,
-  });
-  return row ? { ...row, createdAt: row.createdAt.toISOString() } : null;
+export async function updateUser(id: string, data: { name?: string }): Promise<User | null> {
+  const [row] = await db
+    .update(schema.users)
+    .set(data)
+    .where(eq(schema.users.id, id))
+    .returning(publicFields);
+  return row ? toUserDTO(row) : null;
 }
 
 export async function deleteUser(id: string) {
