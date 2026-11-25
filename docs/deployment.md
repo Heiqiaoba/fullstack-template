@@ -20,7 +20,7 @@
 export BETTER_AUTH_SECRET=$(openssl rand -base64 32)
 export BETTER_AUTH_URL=http://localhost
 docker compose -f docker/docker-compose.yml up -d --build
-docker compose -f docker/docker-compose.yml exec server pnpm db:migrate
+docker compose -f docker/docker-compose.yml exec server node apps/server/dist/db/migrate.js
 ```
 
 访问 http://localhost。Nginx 监听 80，反代 `/api/*` 到 server:3000。

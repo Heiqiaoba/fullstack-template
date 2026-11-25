@@ -6,6 +6,11 @@ config({ path: '.env.test' });
 
 export default defineConfig({
   test: {
+    coverage: {
+      enabled: process.env.COVERAGE === 'true',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+    },
     environment: 'node',
     globals: true,
   },

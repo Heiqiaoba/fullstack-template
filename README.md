@@ -85,7 +85,7 @@ export BETTER_AUTH_URL=https://your-domain.com
 docker compose -f docker/docker-compose.yml up -d --build
 
 # 3. 在 server 容器内执行迁移
-docker compose -f docker/docker-compose.yml exec server pnpm db:migrate
+docker compose -f docker/docker-compose.yml exec server node apps/server/dist/db/migrate.js
 ```
 
 Nginx 将 `/api/*` 反向代理到 server，静态资源走缓存，SPA 路由 fallback 到 `index.html`。

@@ -44,7 +44,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
       - name: Test
-        run: pnpm test -- --coverage
+        run: pnpm test
+        env:
+          COVERAGE: 'true'
       - name: Build
         run: pnpm build
       - name: Audit dependencies

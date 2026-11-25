@@ -39,9 +39,24 @@ export async function buildApp() {
 
   // Better Auth：挂载到 /api/auth/*（必须在 JSON body parser 之前接管原始请求）
   const authHandler = toNodeHandler(auth);
-  app.all('/api/auth/*', (req, reply) => {
-    reply.hijack();
-    return authHandler(req.raw, reply.raw);
+  app.addHook('onRequest', async (req, reply) => {
+    if (req.url.startsWith('/api/auth/')) {
+      // hijack 会绕过 Fastify 的 onSend 链，手动补上 CORS 与安全响应头
+      const origin = req.headers.origin;
+      if (
+        origin &&
+        env.CORS_ORIGIN.split(',')
+          .map((s) => s.trim())
+          .includes(origin)
+      ) {
+        reply.raw.setHeader('access-control-allow-origin', origin);
+        reply.raw.setHeader('access-control-allow-credentials', 'true');
+        reply.raw.setHeader('vary', 'origin');
+      }
+      reply.raw.setHeader('x-request-id', req.id);
+      reply.hijack();
+      await authHandler(req.raw, reply.raw);
+    }
   });
 
   // API 文档（生产默认关闭；开启时用 Bearer Token 简单保护）
