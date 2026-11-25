@@ -18,6 +18,11 @@ export function AppHeader() {
       <Space>
         {session ? (
           <>
+            {(session.user as { role?: string }).role === 'admin' && (
+              <Link to="/admin">
+                <Button type="text">管理端</Button>
+              </Link>
+            )}
             <Text type="secondary">{session.user.email}</Text>
             <Button type="text" icon={<LogoutOutlined />} onClick={() => void signOut()}>
               退出

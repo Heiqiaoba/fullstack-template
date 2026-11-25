@@ -59,6 +59,14 @@
 - `GET /api/v1/users` 为管理员端点（403 表示角色不足）
 - 被封禁用户（`banned=true`）所有请求返回 403
 
+**前端机制**（脚手架提供，页面留给业务）：
+- `authClient.admin.*`：adminClient 插件已挂载，直接调用 `setRole/banUser/listUsers` 等端点，无需自行封装
+- `useRole()` / `roleOf()`（[`lib/role.ts`](../apps/web/src/lib/role.ts)）：从 session 读取角色的两种形态
+- `<RoleGate allow={['admin']}>` / `<AdminGuard>`：细粒度渲染门禁与路由守卫
+- `/admin` 示例页：演示完整链路，业务开发时替换即可
+
+注意：客户端门禁只管展示，**真正的安全边界永远是后端 `requireAdmin` 守卫**。
+
 ## 限流（分级）
 
 | 范围 | 规则 |

@@ -6,7 +6,16 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": ["dist", "node_modules", "coverage", ".turbo", "*.config.js", "*.config.ts"]
+    "ignore": [
+      "dist",
+      "node_modules",
+      "coverage",
+      ".turbo",
+      "*.config.js",
+      "*.config.ts",
+      "**/generated.d.ts",
+      "**/openapi.json"
+    ]
   },
   "formatter": {
     "enabled": true,

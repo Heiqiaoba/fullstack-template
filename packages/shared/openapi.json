@@ -36,7 +36,9 @@
     "/api/v1/users": {
       "get": {
         "summary": "分页列出用户（仅管理员）",
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "security": [
           {
             "cookieAuth": []
@@ -70,7 +72,10 @@
                           },
                           "role": {
                             "type": "string",
-                            "enum": ["user", "admin"]
+                            "enum": [
+                              "user",
+                              "admin"
+                            ]
                           },
                           "createdAt": {
                             "type": "string",
@@ -78,7 +83,13 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           }
                         },
-                        "required": ["id", "name", "email", "role", "createdAt"],
+                        "required": [
+                          "id",
+                          "name",
+                          "email",
+                          "role",
+                          "createdAt"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -98,7 +109,12 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["items", "total", "page", "pageSize"],
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -122,14 +138,19 @@
                         },
                         "details": {}
                       },
-                      "required": ["code", "message"],
+                      "required": [
+                        "code",
+                        "message"
+                      ],
                       "additionalProperties": false
                     },
                     "requestId": {
                       "type": "string"
                     }
                   },
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -153,14 +174,19 @@
                         },
                         "details": {}
                       },
-                      "required": ["code", "message"],
+                      "required": [
+                        "code",
+                        "message"
+                      ],
                       "additionalProperties": false
                     },
                     "requestId": {
                       "type": "string"
                     }
                   },
-                  "required": ["error"],
+                  "required": [
+                    "error"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -172,7 +198,9 @@
     "/api/v1/users/me": {
       "get": {
         "summary": "获取当前登录用户",
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "security": [
           {
             "cookieAuth": []
@@ -201,7 +229,10 @@
                     },
                     "role": {
                       "type": "string",
-                      "enum": ["user", "admin"]
+                      "enum": [
+                        "user",
+                        "admin"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -209,7 +240,13 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     }
                   },
-                  "required": ["id", "name", "email", "role", "createdAt"],
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "role",
+                    "createdAt"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -221,7 +258,9 @@
     "/api/v1/users/{id}": {
       "get": {
         "summary": "按 ID 查询用户",
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "parameters": [
           {
             "schema": {
@@ -256,7 +295,10 @@
                     },
                     "role": {
                       "type": "string",
-                      "enum": ["user", "admin"]
+                      "enum": [
+                        "user",
+                        "admin"
+                      ]
                     },
                     "createdAt": {
                       "type": "string",
@@ -264,7 +306,13 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     }
                   },
-                  "required": ["id", "name", "email", "role", "createdAt"],
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "role",
+                    "createdAt"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -274,7 +322,9 @@
       },
       "patch": {
         "summary": "更新用户昵称（仅本人）",
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "parameters": [
           {
             "schema": {
@@ -294,7 +344,9 @@
       },
       "delete": {
         "summary": "删除用户（仅本人）",
-        "tags": ["users"],
+        "tags": [
+          "users"
+        ],
         "parameters": [
           {
             "schema": {
@@ -316,7 +368,9 @@
     "/api/v1/todos": {
       "get": {
         "summary": "分页列出我的待办",
-        "tags": ["todos"],
+        "tags": [
+          "todos"
+        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -351,7 +405,13 @@
                             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                           }
                         },
-                        "required": ["id", "title", "completed", "createdAt", "updatedAt"],
+                        "required": [
+                          "id",
+                          "title",
+                          "completed",
+                          "createdAt",
+                          "updatedAt"
+                        ],
                         "additionalProperties": false
                       }
                     },
@@ -371,7 +431,12 @@
                       "maximum": 9007199254740991
                     }
                   },
-                  "required": ["items", "total", "page", "pageSize"],
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -381,7 +446,9 @@
       },
       "post": {
         "summary": "创建待办（事务：同时初始化用户档案）",
-        "tags": ["todos"],
+        "tags": [
+          "todos"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -395,7 +462,9 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["title"],
+                "required": [
+                  "title"
+                ],
                 "additionalProperties": false
               }
             }
@@ -430,7 +499,13 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     }
                   },
-                  "required": ["id", "title", "completed", "createdAt", "updatedAt"],
+                  "required": [
+                    "id",
+                    "title",
+                    "completed",
+                    "createdAt",
+                    "updatedAt"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -442,7 +517,9 @@
     "/api/v1/todos/{id}": {
       "patch": {
         "summary": "更新待办（仅本人）",
-        "tags": ["todos"],
+        "tags": [
+          "todos"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -504,7 +581,13 @@
                       "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     }
                   },
-                  "required": ["id", "title", "completed", "createdAt", "updatedAt"],
+                  "required": [
+                    "id",
+                    "title",
+                    "completed",
+                    "createdAt",
+                    "updatedAt"
+                  ],
                   "additionalProperties": false
                 }
               }
@@ -514,7 +597,9 @@
       },
       "delete": {
         "summary": "删除待办（仅本人）",
-        "tags": ["todos"],
+        "tags": [
+          "todos"
+        ],
         "parameters": [
           {
             "schema": {

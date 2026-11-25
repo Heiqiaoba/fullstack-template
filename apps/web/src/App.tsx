@@ -1,12 +1,13 @@
+import { AdminGuard } from '@/components/AdminGuard';
 import { AppHeader } from '@/components/AppHeader';
 import { AuthGuard } from '@/components/AuthGuard';
+import { Admin } from '@/routes/Admin';
 import { Home } from '@/routes/Home';
 import { Login } from '@/routes/Login';
 import { NotFound } from '@/routes/NotFound';
 import { Todos } from '@/routes/Todos';
 import { ConfigProvider, Layout } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 const { Content, Footer } = Layout;
@@ -33,6 +34,14 @@ export function App() {
                 <AuthGuard>
                   <Todos />
                 </AuthGuard>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminGuard>
+                  <Admin />
+                </AdminGuard>
               }
             />
             <Route path="*" element={<NotFound />} />
