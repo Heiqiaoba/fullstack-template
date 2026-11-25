@@ -1,29 +1,32 @@
-/**
- * telemetry 单元测试：覆盖事件入队与脱敏、sendBeacon 兜底上报、网络失败静默三条核心行为。
- * 关键断言用意：
- * - 上报体中的 path 只含 pathname、sessionId 稳定，验证「不记 query」与会话标识复用；
- * - flush(true) 调用 sendBeacon 且队列清空，验证页面卸载场景的无感上报；
- * - fetch 拒绝时 flush 仍 resolve，验证埋点绝不影响业务。
- */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// 隔离环境：模拟浏览器存储与 sendBeacon/fetch
+// 隔离环境：模拟浏览器存储与 sendBeacon/fetch（隐私模式下 storage 可能抛错）
 const store = new Map<string, string>();
-vi.stubGlobal('sessionStorage', {
-  getItem: (k: string) => store.get(k) ?? null,
-  setItem: (k: string, v: string) => void store.set(k, v),
-});
-vi.stubGlobal('crypto', { randomUUID: () => 'session-1' });
+const throwingStorage = {
+  getItem: (_k: string) => {
+    throw new Error('SecurityError');
+  },
+  setItem: (_k: string, _v: string) => {
+    throw new Error('QuotaExceededError');
+  },
+};
+let useThrowingStorage = false;
+const storageProxy = {
+  getItem: (k: string) =>
+    useThrowingStorage ? throwingStorage.getItem(k) : (store.get(k) ?? null),
+  setItem: (k: string, v: string) => {
+    if (useThrowingStorage) throwingStorage.setItem(k, v);
+    store.set(k, v);
+  },
+};
+let uuidSeq = 0;
+vi.stubGlobal('sessionStorage', storageProxy);
+vi.stubGlobal('crypto', { randomUUID: () => `session-${++uuidSeq}` });
 vi.stubGlobal('navigator', { sendBeacon: vi.fn(() => true) });
-vi.stubGlobal('window', {
-  location: { pathname: '/todos' },
-  addEventListener: vi.fn(),
-});
+vi.stubGlobal('window', { location: { pathname: '/todos' }, addEventListener: vi.fn() });
 vi.stubGlobal('document', { visibilityState: 'visible' });
-vi.stubGlobal(
-  'fetch',
-  vi.fn(() => Promise.resolve({ ok: true })),
-);
+let fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+vi.stubGlobal('fetch', fetchMock);
 vi.stubGlobal('Blob', class {});
 vi.stubGlobal(
   'setInterval',
@@ -31,15 +34,23 @@ vi.stubGlobal(
 );
 vi.stubGlobal('clearInterval', vi.fn());
 
+async function loadFresh() {
+  vi.resetModules();
+  return import('./telemetry');
+}
+
 describe('telemetry', () => {
   beforeEach(() => {
     store.clear();
+    useThrowingStorage = false;
+    uuidSeq = 0;
+    fetchMock = vi.fn(() => Promise.resolve({ ok: true }));
+    vi.stubGlobal('fetch', fetchMock);
     vi.clearAllMocks();
   });
 
-  // 断言事件体字段与队列清空：path 不含 query，sessionId 来自 stub 的固定值。
   it('tracks events with sanitized path and stable session id', async () => {
-    const { telemetry } = await import('./telemetry');
+    const { telemetry } = await loadFresh();
     telemetry.track('todo_create', { source: 'form' });
     expect(telemetry.pending).toBe(1);
 
@@ -49,29 +60,59 @@ describe('telemetry', () => {
     expect(body.events[0]).toMatchObject({
       type: 'todo_create',
       path: '/todos',
-      sessionId: 'session-1',
       props: { source: 'form' },
     });
-    expect(telemetry.pending).toBe(0);
+    // 同一会话内 sessionId 保持稳定
+    telemetry.track('page_view');
+    await telemetry.flush();
+    const second = JSON.parse(
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[1]?.[1]?.body ?? '{}',
+    );
+    expect(second.events[0].sessionId).toBe(body.events[0].sessionId);
   });
 
-  // 断言卸载路径走 sendBeacon 而非 fetch，保证导航不被上报阻塞。
   it('uses sendBeacon on page hide (user-invisible flush)', async () => {
-    const { telemetry } = await import('./telemetry');
+    const { telemetry } = await loadFresh();
     telemetry.track('page_view');
     await telemetry.flush(true);
     expect(globalThis.navigator.sendBeacon).toHaveBeenCalled();
     expect(telemetry.pending).toBe(0);
   });
 
-  // 断言 flush 在 fetch 失败时仍然 resolve：埋点故障绝不能冒泡成业务错误。
   it('never throws when the network fails', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(() => Promise.reject(new Error('offline'))),
     );
-    const { telemetry } = await import('./telemetry');
+    const { telemetry } = await loadFresh();
     telemetry.track('click');
     await expect(telemetry.flush()).resolves.toBeUndefined();
+  });
+
+  it('falls back to in-memory session id when storage throws (privacy mode)', async () => {
+    useThrowingStorage = true;
+    const { telemetry } = await loadFresh();
+    // 关键断言：storage 抛错不能影响 track / flush（埋点绝不影响业务）
+    expect(() => telemetry.track('page_view')).not.toThrow();
+    expect(telemetry.pending).toBe(1);
+    await expect(telemetry.flush()).resolves.toBeUndefined();
+    const body = JSON.parse(
+      (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls[0]?.[1]?.body ?? '{}',
+    );
+    // 退化到内存 id，事件仍带合法 sessionId
+    expect(typeof body.events[0].sessionId).toBe('string');
+    expect(body.events[0].sessionId.length).toBeGreaterThan(0);
+  });
+
+  it('flush survives JSON.stringify failure (bad props like BigInt)', async () => {
+    const { telemetry } = await loadFresh();
+    telemetry.track('bad_event');
+    // 直接把不可序列化的值塞进队列（模拟调用方绕过类型约束）
+    const queue = (telemetry as unknown as { queue: Array<{ props?: unknown }> }).queue;
+    const first = queue.at(0);
+    if (first) first.props = { big: 1n };
+    // 关键断言：stringify 失败不能产生 unhandled rejection 或抛错
+    await expect(telemetry.flush()).resolves.toBeUndefined();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 });

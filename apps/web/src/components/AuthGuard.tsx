@@ -8,23 +8,41 @@
  * 真正的安全边界在后端受保护接口；前端守卫可被绕过，不能作为权限依据。
  */
 import { useSession } from '@/lib/auth-client';
-import { Spin } from 'antd';
+import { Alert, Spin } from 'antd';
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 
 /**
  * 受保护路由容器。
+ *
+ * 四态区分（避免把「接口异常」误判为「未登录」导致丢失当前页）：
+ * - isPending：会话加载中 → Spin；
+ * - error：会话接口报错（网络抖动/后端 5xx）→ 显式错误提示，让用户手动刷新，
+ *   而不是跳去登录页（用户可能本来就登录着）；
+ * - 无会话 → 重定向 /login（state.from 记录来源）；
+ * - 有会话 → 渲染 children。
  * @param children 已登录时才渲染的子树
- * @returns 加载中显示 Spin；未登录时重定向到 /login（state.from 记录来源）；否则渲染 children
  */
 export function AuthGuard({ children }: { children: ReactNode }) {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending, error } = useSession();
   const location = useLocation();
 
   if (isPending) {
     return (
       <div style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
         <Spin size="large" />
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div style={{ display: 'grid', placeItems: 'center', minHeight: '60vh' }}>
+        <Alert
+          type="error"
+          showIcon
+          message="会话状态获取失败"
+          description="请检查网络后刷新页面重试"
+        />
       </div>
     );
   }

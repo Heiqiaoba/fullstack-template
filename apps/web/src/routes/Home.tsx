@@ -6,7 +6,7 @@
  */
 import { useUsers } from '@/api/users';
 import { QueryState } from '@/components/QueryState';
-import { signOut } from '@/lib/auth-client';
+import { signOutAndClear } from '@/lib/auth-client';
 import { Button, Card, List, Pagination, Typography } from 'antd';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -31,7 +31,7 @@ export function Home() {
         <Link to="/todos">
           <Button type="primary">我的待办</Button>
         </Link>
-        <Button onClick={() => void signOut()}>退出登录</Button>
+        <Button onClick={() => void signOutAndClear()}>退出登录</Button>
       </div>
       <Card title="用户列表" style={{ marginTop: 16 }}>
         <QueryState query={query}>

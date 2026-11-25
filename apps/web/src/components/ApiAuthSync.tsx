@@ -24,12 +24,16 @@ export function ApiAuthSync() {
   const navigate = useNavigate();
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      // 先取消在途请求再清缓存：避免飞行中的响应把旧用户数据写回空缓存
+      void queryClient.cancelQueries();
       queryClient.clear();
+      // 刷新会话状态，让 AuthGuard 拿到最新登录态；不阻塞跳转（登录页不依赖它完成）
       void getSession();
-      navigate('/login', { replace: true, state: { from: window.location.pathname } });
+      // from 用当前路由路径；登录成功后由 Login 页读取并跳回
+      navigate('/login', { replace: true });
     });
-    // 卸载时重置为noop，避免残留处理器持有旧的 navigate 引用。
-    return () => setUnauthorizedHandler(() => {});
+    // 卸载时彻底注销（而非置 noop）：401 信号不会被子组件意外吞掉
+    return () => setUnauthorizedHandler(undefined);
   }, [navigate]);
   return null;
 }

@@ -62,7 +62,7 @@ type ErrorBody = {
  * @param handler 收到 401 时调用的回调
  */
 let onUnauthorized: (() => void) | undefined;
-export function setUnauthorizedHandler(handler: () => void) {
+export function setUnauthorizedHandler(handler: (() => void) | undefined) {
   onUnauthorized = handler;
 }
 
@@ -86,10 +86,15 @@ const instance: AxiosInstance = axios.create({
 
 // 请求拦截：为每个请求打上唯一 X-Request-ID（便于与后端日志串联），
 // 并在 tokenProvider 存在时注入 Authorization: Bearer <token>。
+// 调用方已显式设置的头不覆盖（如调用第三方 API 或模拟登录场景）。
 instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = tokenProvider?.();
-  if (token) config.headers.set('Authorization', `Bearer ${token}`);
-  config.headers.set('X-Request-ID', crypto.randomUUID());
+  if (token && !config.headers.has('Authorization')) {
+    config.headers.set('Authorization', `Bearer ${token}`);
+  }
+  if (!config.headers.has('X-Request-ID')) {
+    config.headers.set('X-Request-ID', crypto.randomUUID());
+  }
   return config;
 });
 
@@ -121,13 +126,25 @@ instance.interceptors.response.use(
       if (status === 401) onUnauthorized?.();
       return Promise.reject(error);
     }
-    // 网络错误 / 超时 / 取消
+    // 网络错误 / 超时 / 取消：同样打埋点（否则断网/CORS 场景会成为可观测性盲区）
+    const path = ((err.config?.url ?? '').split('?')[0] ?? '').slice(0, 200);
     if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
+      telemetry.track('api_error', {
+        code: 'TIMEOUT',
+        method: (err.config?.method ?? 'unknown').toUpperCase(),
+        path,
+      });
       return Promise.reject(new ApiError({ code: 'TIMEOUT', message: '请求超时，请稍后重试' }));
     }
     if (axios.isCancel(err)) {
+      // 主动取消（如乐观更新前的 cancelQueries）是正常流程，不打点避免噪音
       return Promise.reject(new ApiError({ code: 'CANCELLED', message: '请求已取消' }));
     }
+    telemetry.track('api_error', {
+      code: 'NETWORK',
+      method: (err.config?.method ?? 'unknown').toUpperCase(),
+      path,
+    });
     return Promise.reject(
       new ApiError({ code: 'NETWORK', message: err.message || '网络连接失败' }),
     );

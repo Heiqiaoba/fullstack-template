@@ -20,7 +20,8 @@ import { createAuthClient } from 'better-auth/react';
  * @returns 配置好的 Better Auth 客户端实例
  */
 export const authClient = createAuthClient({
-  baseURL: window.location.origin,
+  // 防御式读取 window：模块顶层直接访问会在非浏览器环境（SSR/未来测试）抛 ReferenceError
+  baseURL: typeof window === 'undefined' ? '' : window.location.origin,
   basePath: '/api/auth',
   plugins: [adminClient()],
 });
@@ -32,3 +33,21 @@ export const authClient = createAuthClient({
  * - getSession：命令式获取会话（ApiAuthSync 在 401 后刷新会话时使用）。
  */
 export const { signIn, signUp, signOut, useSession, getSession } = authClient;
+
+/**
+ * 退出登录并清理本地缓存状态的一站式封装。
+ *
+ * 为什么需要：直接调 signOut() 只清服务端会话，TanStack Query 缓存里仍残留
+ * 该用户的数据（5 分钟 gcTime 内可见），切换账号会造成数据串号。
+ * 401 路径由 ApiAuthSync 统一处理；本函数覆盖「用户主动退出」路径。
+ */
+export async function signOutAndClear() {
+  try {
+    await signOut();
+  } finally {
+    // 即使 signOut 网络失败也要清本地缓存：本地已无有效会话，残留数据只会误导
+    const { queryClient } = await import('./queryClient');
+    void queryClient.cancelQueries();
+    queryClient.clear();
+  }
+}
