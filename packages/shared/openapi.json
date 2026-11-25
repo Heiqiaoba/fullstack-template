@@ -617,6 +617,19 @@
           }
         }
       }
+    },
+    "/api/v1/telemetry": {
+      "post": {
+        "summary": "批量接收前端埋点事件",
+        "tags": [
+          "telemetry"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response"
+          }
+        }
+      }
     }
   },
   "servers": [

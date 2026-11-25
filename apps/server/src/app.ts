@@ -10,6 +10,7 @@ import { logger, requestLogger } from './config/logger';
 import { auth } from './lib/auth';
 import { errorHandler } from './middleware/error-handler';
 import { healthRoutes } from './routes/health';
+import { telemetryRoutes } from './routes/telemetry';
 import { todoRoutes } from './routes/todos';
 import { userRoutes } from './routes/users';
 
@@ -129,6 +130,7 @@ export async function buildApp() {
       await healthRoutes(api);
       await userRoutes(api);
       await todoRoutes(api);
+      await telemetryRoutes(api);
     },
     { prefix: '/api/v1' },
   );

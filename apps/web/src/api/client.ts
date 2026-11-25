@@ -1,3 +1,4 @@
+import { telemetry } from '@/lib/telemetry';
 import axios, {
   type AxiosError,
   type AxiosInstance,
@@ -74,6 +75,14 @@ instance.interceptors.response.use(
         message: body.error?.message ?? `请求失败 (${status})`,
         requestId: body.requestId ?? (headers['x-request-id'] as string | undefined),
         details: body.error?.details,
+      });
+      // 埋点：记录 API 失败（不记 body/参数，只记方法与状态码）
+      const request = err.config;
+      telemetry.track('api_error', {
+        method: (request?.method ?? 'unknown').toUpperCase(),
+        status,
+        code: error.code,
+        path: ((request?.url ?? '').split('?')[0] ?? '').slice(0, 200),
       });
       // 会话过期：交给外部处理的跳登录 / 刷新逻辑，不在此处硬编码路由
       if (status === 401) onUnauthorized?.();

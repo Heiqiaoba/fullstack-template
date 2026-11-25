@@ -84,3 +84,17 @@
 pnpm api:generate   # 1) 从 buildApp() 离线导出 openapi.json → 2) 生成前端 TS 类型
 ```
 产物 `packages/shared/openapi.json` 与 `apps/web/src/api/generated.d.ts` 纳入版本控制；[`contract.test.ts`](../apps/web/src/api/contract.test.ts) 用生成的类型反向校验 shared 契约，后端 schema 变更后忘记重新生成会导致类型检查失败。
+
+## 前端埋点（用户无感）
+
+前端自动采集：路由切换（`page_view`）、API 失败（`api_error`）、JS 错误（`js_error`/`unhandled_rejection`）；业务代码可用 `track('custom_event', { ... })` 手动埋点。事件在本地队列聚合后由 `sendBeacon` / `fetch keepalive` 上报，用户完全无感。
+
+| 项 | 说明 |
+|---|---|
+| 接收端点 | `POST /api/v1/telemetry`（无需登录，匿名事件也采集；已登录时后端从 cookie 静默补 userId） |
+| 响应 | `202 { accepted: n }`；埋点失败绝不影响业务 |
+| 隐私 | 只记路径不记 query；属性限定标量；生产日志只记聚合计数 |
+| 配置 | `VITE_TELEMETRY`（开关）、`VITE_TELEMETRY_SAMPLE`（采样率 0~1）、`VITE_TELEMETRY_DEBUG`（开发调试） |
+| 存储 | 默认结构化日志（ELK/Loki 可采集）；接数仓只需替换 `lib/telemetry-sink.ts` 的 `write()` |
+
+事件契约定义在 `packages/shared/src/telemetry.ts`，前后端共用同一份 Zod schema 校验。
