@@ -7,6 +7,7 @@ export const errorResponseSchema = z.object({
     message: z.string(),
     details: z.unknown().optional(),
   }),
+  requestId: z.string().optional(),
 });
 
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
@@ -28,3 +29,37 @@ export function paginatedSchema<T extends z.ZodTypeAny>(item: T) {
     pageSize: z.number().int().min(1),
   });
 }
+
+export type Paginated<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/** 通用 ID 路径参数 */
+export const idParamSchema = z.object({ id: z.string().min(1) });
+
+/** 待办事项 */
+export const todoSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  completed: z.boolean(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export type Todo = z.infer<typeof todoSchema>;
+
+export const createTodoSchema = z.object({
+  title: z.string().min(1).max(200),
+});
+
+export type CreateTodoInput = z.infer<typeof createTodoSchema>;
+
+export const updateTodoSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  completed: z.boolean().optional(),
+});
+
+export type UpdateTodoInput = z.infer<typeof updateTodoSchema>;

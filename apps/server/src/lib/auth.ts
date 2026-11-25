@@ -1,18 +1,49 @@
-import { env } from '../config/env';
+import { betterAuth } from 'better-auth';
+import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { env, isProd } from '../config/env';
+import { db, schema } from '../db';
 
 /**
- * 认证占位（接入点已留好）。
- *
- * 推荐在正式写业务前接入 better-auth：
- *   1. 安装 @better-auth/drizzle-adapter（或 better-auth 的 drizzle 集成）
- *   2. 传入本项目的 drizzle 实例与 schema
- *   3. 在 app.ts 挂载 auth.handler 到 /api/auth/*
- *
- * 这样现在脚手架可编译可运行，后期接入认证不需要改路由结构。
+ * Better Auth 实例：邮箱密码 + 数据库会话，Drizzle adapter 直连本项目连接池。
+ * HTTP handler 在 app.ts 挂载到 /api/auth/*，前端用 better-auth/react 客户端调用。
  */
-export const authConfig = {
+export const auth = betterAuth({
+  appName: 'Fullstack Template',
   baseURL: env.BETTER_AUTH_URL,
   secret: env.BETTER_AUTH_SECRET,
   trustedOrigins: [env.CORS_ORIGIN],
-  emailAndPassword: { enabled: true, minPasswordLength: 8 },
-} as const;
+  database: drizzleAdapter(db, {
+    provider: 'pg',
+    schema: {
+      user: schema.users,
+      session: schema.sessions,
+      account: schema.accounts,
+      verification: schema.verifications,
+    },
+  }),
+  emailAndPassword: {
+    enabled: true,
+    minPasswordLength: 8,
+    maxPasswordLength: 128,
+    autoSignIn: true,
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 天
+    updateAge: 60 * 60 * 24, // 每天续期一次
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
+  advanced: {
+    cookiePrefix: isProd ? 'app' : 'app_dev',
+    useSecureCookies: isProd,
+    defaultCookieAttributes: {
+      sameSite: 'lax',
+      httpOnly: true,
+      secure: isProd,
+    },
+  },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 20,
+  },
+});

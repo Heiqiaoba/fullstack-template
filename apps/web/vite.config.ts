@@ -18,4 +18,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          antd: ['antd', '@ant-design/icons'],
+          query: ['@tanstack/react-query', 'axios'],
+          auth: ['better-auth/react'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 });

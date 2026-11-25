@@ -1,53 +1,96 @@
-import { paginatedSchema, paginationSchema, registerSchema, userSchema } from '@template/shared';
-import { desc } from 'drizzle-orm';
+import {
+  errorResponseSchema,
+  idParamSchema,
+  paginatedSchema,
+  paginationSchema,
+  userSchema,
+} from '@template/shared';
 import type { FastifyInstance } from 'fastify';
-import { zodToJsonSchema } from 'zod-to-json-schema';
-import { db, schema } from '../db';
-import { parseBody, parseQuery } from '../middleware/validation';
+import { getAuth, requireAuth } from '../lib/context';
+import { Errors } from '../lib/errors';
+import { toJsonSchema } from '../lib/json-schema';
+import { parseParams, parseQuery } from '../middleware/validation';
+import * as userService from '../services/user.service';
 
 export async function userRoutes(app: FastifyInstance) {
-  /** GET /users - 分页列出用户 */
   app.get(
     '/users',
     {
       schema: {
         tags: ['users'],
-        summary: 'List users',
-        response: { 200: zodToJsonSchema(paginatedSchema(userSchema)) },
+        summary: '分页列出用户',
+        security: [{ cookieAuth: [] }],
+        response: {
+          200: toJsonSchema(paginatedSchema(userSchema)),
+          401: toJsonSchema(errorResponseSchema),
+        },
       },
+      onRequest: [requireAuth],
     },
     async (req) => {
       const { page, pageSize } = parseQuery(paginationSchema, req);
-      const rows = await db
-        .select()
-        .from(schema.users)
-        .orderBy(desc(schema.users.createdAt))
-        .limit(pageSize)
-        .offset((page - 1) * pageSize);
-
-      const items = rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        email: r.email,
-        createdAt: r.createdAt.toISOString(),
-      }));
-
-      return { items, total: items.length, page, pageSize };
+      return userService.listUsers(page, pageSize);
     },
   );
 
-  /** POST /users - 演示共享 Zod schema 校验；真实注册走 /api/auth/register */
-  app.post(
-    '/users',
+  app.get(
+    '/users/:id',
     {
       schema: {
         tags: ['users'],
-        summary: 'Validate a registration payload (demo)',
+        summary: '按 ID 查询用户',
+        params: toJsonSchema(idParamSchema),
+        response: { 200: toJsonSchema(userSchema) },
       },
+      onRequest: [requireAuth],
     },
     async (req) => {
-      const body = parseBody(registerSchema, req);
-      return { valid: true, name: body.name, email: body.email };
+      const { id } = parseParams(idParamSchema, req);
+      const user = await userService.getUserById(id);
+      if (!user) throw Errors.notFound('User not found');
+      return user;
+    },
+  );
+
+  app.patch(
+    '/users/:id',
+    {
+      schema: {
+        tags: ['users'],
+        summary: '更新用户昵称（仅本人）',
+        params: toJsonSchema(idParamSchema),
+      },
+      onRequest: [requireAuth],
+    },
+    async (req) => {
+      const { id } = parseParams(idParamSchema, req);
+      if (req.auth?.userId !== id) throw Errors.forbidden('只能修改自己的资料');
+      const body = req.body as { name?: string };
+      if (!body?.name || body.name.length < 2 || body.name.length > 100) {
+        throw Errors.badRequest('Invalid name');
+      }
+      const user = await userService.updateUser(id, { name: body.name });
+      if (!user) throw Errors.notFound('User not found');
+      return user;
+    },
+  );
+
+  app.delete(
+    '/users/:id',
+    {
+      schema: {
+        tags: ['users'],
+        summary: '删除用户（仅本人）',
+        params: toJsonSchema(idParamSchema),
+      },
+      onRequest: [requireAuth],
+    },
+    async (req) => {
+      const { id } = parseParams(idParamSchema, req);
+      if (req.auth?.userId !== id) throw Errors.forbidden('只能删除自己的账号');
+      const ok = await userService.deleteUser(id);
+      if (!ok) throw Errors.notFound('User not found');
+      return { success: true };
     },
   );
 }

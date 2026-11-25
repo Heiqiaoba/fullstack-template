@@ -1,13 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
-import { type User, userSchema } from '@template/shared';
+import type { Paginated, User } from '@template/shared';
 import { apiClient } from './client';
 
-async function fetchUsers(): Promise<User[]> {
-  const { data } = await apiClient.get('/users');
-  // 用共享 schema 校验后端响应，前后端契约一致
-  return (data.items as unknown[]).map((item) => userSchema.parse(item));
+async function fetchUsers(page = 1, pageSize = 20): Promise<Paginated<User>> {
+  const { data } = await apiClient.get('/users', { params: { page, pageSize } });
+  return data;
 }
 
-export function useUsers() {
-  return useQuery({ queryKey: ['users'], queryFn: fetchUsers });
+export function useUsers(page = 1, pageSize = 20) {
+  return useQuery({
+    queryKey: ['users', page, pageSize],
+    queryFn: () => fetchUsers(page, pageSize),
+  });
 }

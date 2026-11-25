@@ -1,7 +1,12 @@
 import { AppHeader } from '@/components/AppHeader';
+import { AuthGuard } from '@/components/AuthGuard';
 import { Home } from '@/routes/Home';
+import { Login } from '@/routes/Login';
+import { NotFound } from '@/routes/NotFound';
+import { Todos } from '@/routes/Todos';
 import { ConfigProvider, Layout } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
+import { Suspense, lazy } from 'react';
 import { Route, Routes } from 'react-router-dom';
 
 const { Content, Footer } = Layout;
@@ -13,7 +18,24 @@ export function App() {
         <AppHeader />
         <Content className="flex-1">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/"
+              element={
+                <AuthGuard>
+                  <Home />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/todos"
+              element={
+                <AuthGuard>
+                  <Todos />
+                </AuthGuard>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Content>
         <Footer className="!bg-transparent !text-center">
