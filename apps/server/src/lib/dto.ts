@@ -1,4 +1,4 @@
-import type { Todo, User } from '@template/shared';
+import type { Todo, User, UserRole } from '@template/shared';
 
 /**
  * DB 行 → API DTO 的唯一边界：
@@ -11,6 +11,7 @@ type UserRow = {
   id: string;
   name: string;
   email: string;
+  role: string | null;
   createdAt: Date;
 };
 
@@ -27,6 +28,7 @@ export function toUserDTO(row: UserRow): User {
     id: row.id,
     name: row.name,
     email: row.email,
+    role: (row.role === 'admin' ? 'admin' : 'user') as UserRole,
     createdAt: row.createdAt.toISOString(),
   };
 }

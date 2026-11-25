@@ -30,7 +30,9 @@ pnpm db:seed           # 可选：填充演示数据
 pnpm dev
 ```
 
-打开 http://localhost:5173，注册账号即可体验完整的认证 → 用户列表 → 待办 CRUD 流程。
+打开 http://localhost:5173，注册账号即可体验完整的认证 → 用户列表（管理员）→ 待办 CRUD 流程。
+
+管理员：注册后把 user id 配到 `ADMIN_USER_IDS` 环境变量，或执行 `pnpm --filter @template/server exec tsx src/db/set-role.ts you@example.com admin`。
 
 ## 常用命令
 
@@ -44,6 +46,7 @@ pnpm dev
 | `pnpm db:generate` | 根据 schema 生成 Drizzle 迁移 |
 | `pnpm db:migrate` | 执行迁移 |
 | `pnpm db:seed` | 填充种子数据 |
+| `pnpm api:generate` | 导出 OpenAPI 并生成前端类型（契约变更必跑） |
 
 ## 架构概览
 

@@ -11,6 +11,8 @@ const envSchema = z.object({
   DB_POOL_MAX: z.coerce.number().int().min(1).max(100).default(10),
   BETTER_AUTH_SECRET: z.string().min(1).default('dev-secret-change-me'),
   BETTER_AUTH_URL: z.string().default('http://localhost:3000'),
+  /** 管理员用户 ID（逗号分隔），对应 admin 插件的 adminUserIds */
+  ADMIN_USER_IDS: z.string().default(''),
   /** 是否注册 Swagger UI：生产默认关闭，除非显式开启 */
   ENABLE_DOCS: z
     .enum(['true', 'false'])

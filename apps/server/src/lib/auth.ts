@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { admin } from 'better-auth/plugins';
 import { env, isProd } from '../config/env';
 import { db, schema } from '../db';
 
@@ -46,4 +47,14 @@ export const auth = betterAuth({
     window: 60,
     max: 20,
   },
+  plugins: [
+    admin({
+      defaultRole: 'user',
+      adminRoles: ['admin'],
+      // 生产通过 env 指定管理员 user id（逗号分隔）；未设置时无人拥有管理员权限
+      adminUserIds: env.ADMIN_USER_IDS.split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }),
+  ],
 });

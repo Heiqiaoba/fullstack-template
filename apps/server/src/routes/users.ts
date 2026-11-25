@@ -6,7 +6,7 @@ import {
   userSchema,
 } from '@template/shared';
 import type { FastifyInstance } from 'fastify';
-import { getAuth, requireAuth } from '../lib/context';
+import { getAuth, requireAdmin, requireAuth } from '../lib/context';
 import { Errors } from '../lib/errors';
 import { toJsonSchema } from '../lib/json-schema';
 import { parseParams, parseQuery } from '../middleware/validation';
@@ -18,18 +18,37 @@ export async function userRoutes(app: FastifyInstance) {
     {
       schema: {
         tags: ['users'],
-        summary: '分页列出用户',
+        summary: '分页列出用户（仅管理员）',
         security: [{ cookieAuth: [] }],
         response: {
           200: toJsonSchema(paginatedSchema(userSchema)),
           401: toJsonSchema(errorResponseSchema),
+          403: toJsonSchema(errorResponseSchema),
         },
       },
-      onRequest: [requireAuth],
+      onRequest: [requireAdmin],
     },
     async (req) => {
       const { page, pageSize } = parseQuery(paginationSchema, req);
       return userService.listUsers(page, pageSize);
+    },
+  );
+
+  app.get(
+    '/users/me',
+    {
+      schema: {
+        tags: ['users'],
+        summary: '获取当前登录用户',
+        security: [{ cookieAuth: [] }],
+        response: { 200: toJsonSchema(userSchema) },
+      },
+      onRequest: [requireAuth],
+    },
+    async (req) => {
+      const user = await userService.getUserById(getAuth(req).userId);
+      if (!user) throw Errors.notFound('User not found');
+      return user;
     },
   );
 

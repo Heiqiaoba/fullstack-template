@@ -5,6 +5,7 @@
 必需：
 - `BETTER_AUTH_SECRET`：强随机值（`openssl rand -base64 32`），生产缺失会启动失败
 - `BETTER_AUTH_URL`：对外访问的基础 URL（如 `https://example.com`）
+- `ADMIN_USER_IDS`：管理员用户 ID（逗号分隔），RBAC 提权用
 
 可选：
 - `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`：数据库凭据，默认 postgres/postgres/app

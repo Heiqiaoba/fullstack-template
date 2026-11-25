@@ -33,6 +33,7 @@ services:
       DB_POOL_MAX: 20
       ENABLE_DOCS: ${ENABLE_DOCS:-false}
       DOCS_TOKEN: ${DOCS_TOKEN:-}
+      ADMIN_USER_IDS: ${ADMIN_USER_IDS:-}
     depends_on:
       postgres:
         condition: service_healthy

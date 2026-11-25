@@ -7,6 +7,7 @@ describe('user schemas', () => {
       id: '123e4567-e89b-12d3-a456-426614174000',
       name: 'Alice',
       email: 'alice@example.com',
+      role: 'user',
       createdAt: '2024-01-01T00:00:00.000Z',
     });
     expect(result.name).toBe('Alice');

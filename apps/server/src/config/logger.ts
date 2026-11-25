@@ -1,4 +1,4 @@
-import pino from 'pino';
+import pino, { type Logger } from 'pino';
 import { env, isProd } from './env';
 
 export const logger = pino({
@@ -9,3 +9,8 @@ export const logger = pino({
     censor: '[REDACTED]',
   },
 });
+
+/** 请求作用域 logger：携带 requestId 与脱敏后的路径（去掉 query，避免敏感参数入日志） */
+export function requestLogger(requestId: string, method: string, url: string): Logger {
+  return logger.child({ requestId, method, path: url.split('?')[0] });
+}

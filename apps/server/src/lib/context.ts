@@ -5,6 +5,7 @@ import { Errors } from './errors';
 export type AuthContext = {
   userId: string;
   sessionId: string;
+  role: 'admin' | 'user';
 };
 
 declare module 'fastify' {
@@ -22,8 +23,15 @@ export async function resolveSession(req: FastifyRequest): Promise<AuthContext |
     headers.set('cookie', cookie);
     const result = await auth.api.getSession({ headers });
     if (!result?.session || !result.user) return null;
-    return { userId: result.user.id, sessionId: result.session.id };
-  } catch {
+    const user = result.user as { id: string; role?: string | null; banned?: boolean | null };
+    if (user.banned) throw Errors.forbidden('Account is banned');
+    return {
+      userId: user.id,
+      sessionId: result.session.id,
+      role: user.role === 'admin' ? 'admin' : 'user',
+    };
+  } catch (err) {
+    if (err instanceof Error && 'statusCode' in err) throw err;
     return null;
   }
 }
@@ -38,6 +46,12 @@ export async function requireAuth(req: FastifyRequest, _reply: FastifyReply) {
   const ctx = await resolveSession(req);
   if (!ctx) throw Errors.unauthorized('Sign in required');
   req.auth = ctx;
+}
+
+/** 管理员守卫：必须先经过 requireAuth */
+export async function requireAdmin(req: FastifyRequest, _reply: FastifyReply) {
+  await requireAuth(req, _reply);
+  if (req.auth?.role !== 'admin') throw Errors.forbidden('Admin access required');
 }
 
 /** 在受保护路由中安全取得鉴权上下文（类型安全，避免非空断言） */

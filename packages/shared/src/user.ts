@@ -1,10 +1,14 @@
 import { z } from 'zod';
 
 /** 用户基础信息（对外暴露，不含敏感字段） */
+export const userRoleSchema = z.enum(['user', 'admin']);
+export type UserRole = z.infer<typeof userRoleSchema>;
+
 export const userSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(100),
   email: z.email(),
+  role: userRoleSchema,
   createdAt: z.string().datetime(),
 });
 

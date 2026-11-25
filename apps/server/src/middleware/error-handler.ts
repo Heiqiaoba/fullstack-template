@@ -1,7 +1,6 @@
 import type { ErrorResponse } from '@template/shared';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { ZodError, flattenError } from 'zod';
-import { logger } from '../config/logger';
 import { AppError } from '../lib/errors';
 
 export function errorHandler(_error: FastifyError, req: FastifyRequest, reply: FastifyReply) {
@@ -28,7 +27,7 @@ export function errorHandler(_error: FastifyError, req: FastifyRequest, reply: F
     return reply.status(400).send(body);
   }
 
-  logger.error({ err: error, url: req.url, requestId }, 'Unhandled error');
+  req.log.error({ err: error, requestId, path: req.url.split('?')[0] }, 'Unhandled error');
   const body: ErrorResponse = {
     error: { code: 'INTERNAL', message: 'Internal server error' },
     requestId,

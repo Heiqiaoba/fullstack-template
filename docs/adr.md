@@ -41,3 +41,27 @@
 - **背景**：Swagger UI 在生产暴露会泄露接口信息。
 - **决策**：`ENABLE_DOCS` 默认 false；开启时可用 `DOCS_TOKEN` 做简单 Bearer 保护，建议前置网关鉴权。
 - **后果**：开发便利与生产安全兼顾。
+
+## ADR-008：RBAC 采用 Better Auth admin 插件
+- **状态**：Accepted
+- **背景**：用户列表等接口需要角色区分，避免自造权限系统。
+- **决策**：user 表加 role/banned 字段（插件官方 schema），服务端用 `requireAuth` / `requireAdmin` 守卫，管理员通过 `ADMIN_USER_IDS` 或提权脚本指定。
+- **后果**：认证与权限共用一套会话；角色变更无需改前端路由逻辑。
+
+## ADR-009：OpenAPI 类型生成 + 契约测试
+- **状态**：Accepted
+- **背景**：Swagger 文档与 TS 类型割裂，后端改 schema 前端可能不知道。
+- **决策**：`buildApp()` 离线导出 openapi.json → openapi-typescript 生成前端类型；契约测试用生成类型反向约束 shared 包；CI 检查生成物是否干净。
+- **后果**：契约变更必须显式重新生成，杜绝隐式漂移。
+
+## ADR-010：结构化请求日志
+- **状态**：Accepted
+- **背景**：排查问题需要按 requestId 聚合一次请求的所有日志。
+- **决策**：每请求分配 UUID，用 Pino child logger 携带 requestId/method/path；`onResponse` 记录结构化访问日志（status/durationMS），query 不记录防敏感参数泄露。
+- **后果**：日志可按 requestId 串联；敏感字段（cookie/authorization/password）自动脱敏。
+
+## ADR-011：分级限流
+- **状态**：Accepted
+- **背景**：全局单一限流既不能防认证爆破，也会误伤健康检查探针。
+- **决策**：全局 100/min/IP；认证端点用 Better Auth 内置 20/min；健康探针豁免限流。
+- **后果**：安全与可观测性兼顾；限流响应统一返回 `RATE_LIMITED` 错误码。

@@ -38,11 +38,20 @@ describe('auth routes', () => {
     await app.close();
   });
 
-  it('protected user route rejects unauthenticated request with 401', async () => {
+  it('admin-only user list rejects unauthenticated request with 401', async () => {
     const app = await buildApp();
     const res = await app.inject({ method: 'GET', url: '/api/v1/users' });
     expect(res.statusCode).toBe(401);
     expect(res.json().error.code).toBe('UNAUTHORIZED');
+    await app.close();
+  });
+
+  it('health probes are exempt from rate limiting (no 429 under repeated calls)', async () => {
+    const app = await buildApp();
+    for (let i = 0; i < 5; i++) {
+      const res = await app.inject({ method: 'GET', url: '/api/v1/health' });
+      expect(res.statusCode).toBe(200);
+    }
     await app.close();
   });
 

@@ -9,6 +9,7 @@ const publicFields = {
   id: schema.users.id,
   name: schema.users.name,
   email: schema.users.email,
+  role: schema.users.role,
   createdAt: schema.users.createdAt,
 };
 
