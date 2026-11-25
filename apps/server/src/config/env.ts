@@ -1,0 +1,23 @@
+import 'dotenv/config';
+import { z } from 'zod';
+
+/** 启动时校验环境变量，配置缺失立即失败而不是运行到一半崩溃 */
+const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  DATABASE_URL: z.string().min(1),
+  BETTER_AUTH_SECRET: z.string().min(1).default('dev-secret-change-me'),
+  BETTER_AUTH_URL: z.string().default('http://localhost:3000'),
+});
+
+const parsed = envSchema.safeParse(process.env);
+
+if (!parsed.success) {
+  console.error('Invalid environment variables:');
+  console.error(parsed.error.flatten().fieldErrors);
+  throw new Error('Environment validation failed');
+}
+
+export const env = parsed.data;
+export const isProd = env.NODE_ENV === 'production';

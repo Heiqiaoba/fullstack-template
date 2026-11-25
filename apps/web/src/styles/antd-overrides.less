@@ -1,0 +1,10 @@
+// 深度定制 Ant Design 的入口（需要覆盖 Less 变量时使用）。
+// 说明：antd v5 默认使用 CSS-in-JS，主题优先用 ConfigProvider 配置；
+// 这里保留 Less 通道，供确实需要改底层变量或写复杂选择器的场景使用。
+@primary-color: #1677ff;
+
+.app-override {
+  .ant-btn-primary {
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.02);
+  }
+}

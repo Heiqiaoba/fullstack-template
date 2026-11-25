@@ -1,0 +1,32 @@
+{
+  "name": "fullstack-template",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "db:generate": "pnpm --filter @template/server db:generate",
+    "db:migrate": "pnpm --filter @template/server db:migrate",
+    "db:seed": "pnpm --filter @template/server db:seed",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,less,md}": ["biome format --write --no-errors-on-unmatched"]
+  }
+}

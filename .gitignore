@@ -1,0 +1,28 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# build output
+dist
+build
+.turbo
+coverage
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editors / os
+.DS_Store
+.vscode
+.idea
+
+# local caches
+.npm-cache
+.cache
